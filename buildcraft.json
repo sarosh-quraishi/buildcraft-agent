@@ -1,0 +1,134 @@
+{
+  "project": "coding-agent",
+  "language": "python",
+  "course_source": "/home/sarosh/documents/code/building-a-coding-agent-from-scratch-course",
+  "framework": "pydantic-ai",
+  "current_stage": 1,
+  "test_command": "python -m pytest tests/ -v",
+  "security_track": [
+    {
+      "number": "S1",
+      "name": "Break the gate",
+      "status": "pending",
+      "prerequisite": 5,
+      "description": "Craft prompt injections that bypass the stage 4 permission gate. Goal: make the agent call a gated tool without triggering ask_user. Document every technique that works and fails.",
+      "attack_class": "prompt_injection",
+      "eli8": "Try every sneaky note trick to fool the bouncer into letting the robot through without asking permission."
+    },
+    {
+      "number": "S2",
+      "name": "Tool swap",
+      "status": "pending",
+      "prerequisite": "S1",
+      "description": "Injected context redirects an approved bash call to an unintended command. HITL approved 'ls' gets swapped to 'cat /etc/passwd'. Document the trust boundary gap.",
+      "attack_class": "tool_call_hijacking",
+      "eli8": "The robot was told it can open the blue box. Trick it into thinking opening the red box IS opening the blue box."
+    },
+    {
+      "number": "S3",
+      "name": "RAG poisoning",
+      "status": "pending",
+      "prerequisite": "S2",
+      "description": "Add a retrieval layer (vector store + document fetch). Poison a document in the store with injected instructions. Trigger S1 and S2 through retrieved content rather than direct user input.",
+      "attack_class": "indirect_prompt_injection",
+      "eli8": "Hide the sneaky note inside a book the robot reads. The robot thinks it found the instructions itself — it doesn't know someone planted them."
+    },
+    {
+      "number": "S4",
+      "name": "Subagent hijack",
+      "status": "pending",
+      "prerequisite": 8,
+      "description": "Compromise a child agent via context passed from a parent. Parent agent has restricted tools; child has write access. Poison parent context to make child execute unintended commands.",
+      "attack_class": "cross_agent_context_poisoning",
+      "eli8": "The boss robot tells the helper robot what to do. Trick the boss robot's instructions so the helper robot does something bad — without the boss robot knowing."
+    },
+    {
+      "number": "S5",
+      "name": "Harness",
+      "status": "pending",
+      "prerequisite": "S4",
+      "description": "Automate S1-S4 as reusable probe modules. Each probe: input fixture, expected block, actual result, pass/fail. This is the product: a runtime authorization test suite for agentic systems that garak/promptfoo/PyRIT don't cover.",
+      "attack_class": "automated_security_harness",
+      "eli8": "Write down all the sneaky note tricks in a book, then build a robot inspector that tries every trick automatically on any new robot someone builds."
+    }
+  ],
+  "market_gap": {
+    "thesis": "AI agents can be granted human approval to use tool X, then silently redirected to use tool Y mid-execution. No existing tool detects or prevents this at runtime.",
+    "evidence_sources": ["NVIDIA/garak", "promptfoo/promptfoo", "guardrails-ai/guardrails", "langchain-ai/langchain"],
+    "top_opportunity": "Fail-Closed Authorization and Prompt Injection Defense Layer for Multi-Agent AI Systems",
+    "score": 8,
+    "commercial_gap": 9
+  },
+  "stages": [
+    {
+      "number": 1,
+      "name": "CLI skeleton + message protocol",
+      "lesson": 1,
+      "status": "done",
+      "description": "Entry point, Message dataclass (role+content), a stubbed provider that echoes, no real API calls."
+    },
+    {
+      "number": 2,
+      "name": "Bare-bones agent loop",
+      "lesson": 2,
+      "status": "done",
+      "description": "Real pydantic-ai Agent, LLM provider wired (Gemini/OpenRouter key from .env), agent.iter() loop, stream text to stdout."
+    },
+    {
+      "number": 3,
+      "name": "Read tool",
+      "lesson": 2,
+      "status": "done",
+      "description": "Register a read_file tool with JSON schema. Agent can read files in cwd. Path validation."
+    },
+    {
+      "number": 4,
+      "name": "Permission gate",
+      "lesson": 3,
+      "status": "pending",
+      "description": "Allow/ask/deny gate for tool calls. Gated tools surface a prompt before running. DeferredToolRequests pattern."
+    },
+    {
+      "number": 5,
+      "name": "Bash tool + sandbox",
+      "lesson": 3,
+      "status": "pending",
+      "description": "bash tool with process timeout and explicit human approval. No allowlist-only security claim."
+    },
+    {
+      "number": 6,
+      "name": "Context engineering",
+      "lesson": 4,
+      "status": "pending",
+      "description": "message_history carried across turns. /clear command. Token counting. Microcompaction: blank old tool output to shrink context."
+    },
+    {
+      "number": 7,
+      "name": "Skills",
+      "lesson": 4,
+      "status": "pending",
+      "description": "Discover .decode/skills/ directories. /skill-name slash commands load a SKILL.md prompt prefix. Argument validation."
+    },
+    {
+      "number": 8,
+      "name": "Subagents",
+      "lesson": 5,
+      "status": "pending",
+      "description": "Agent tool spawns a child agent with restricted capability set. Fan-out pattern: parallel subagent dispatch."
+    },
+    {
+      "number": 9,
+      "name": "Remote + headless runtime",
+      "lesson": 6,
+      "status": "pending",
+      "description": "decode run <task> headless mode. No interactive prompts. Sandbox hand-back via git branch."
+    },
+    {
+      "number": 10,
+      "name": "Evals",
+      "lesson": 7,
+      "status": "pending",
+      "description": "Benchmark harness: task format (environment/ solution/ tests/), trial runner, pass/fail judge. Regression suite from traces."
+    }
+  ]
+}

@@ -29,14 +29,34 @@ GATE: dict[str, Decision] = {
 
 
 def gate_check(tool_name: str) -> Decision:
-    # TODO: return the Decision for tool_name, defaulting to ALLOW if not in GATE
-    ???
+    """Return the Decision for a tool, defaulting to ALLOW if not in GATE.
+
+    Why: the agent may call any registered tool — we need a policy decision
+    before running it. GATE is the policy table; unknown tools are safe to allow
+    because only explicitly registered tools can be called at all.
+
+    TODO: collapse the if/else below to one line using dict.get().
+    """
+    if tool_name not in GATE:
+        return Decision.ALLOW
+    else:
+        return GATE[tool_name]
 
 
 def ask_user(tool_name: str, args: str) -> bool:
-    """Print a prompt and return True if user approves."""
-    # TODO: print "Allow {tool_name}({args})? [y/n]: " and return True if input is "y"
-    ???
+    """Prompt the user to approve or deny a tool call. Returns True if approved.
+
+    Why: when gate_check returns ASK, we pause execution and hand control to the
+    human. This is the human-in-the-loop (HITL) moment — the agent cannot proceed
+    until the user decides.
+
+    TODO: simplify the if/else below to a single return statement.
+    """
+    result =input(f"Allow {tool_name}({args})? [y/n]:")
+    if result=='y':
+        return True
+    else:
+        return False
 
 
 def build_model():
@@ -62,21 +82,53 @@ def build_agent(cwd: Path) -> Agent:
 
 
 async def run(prompt: str) -> None:
+    """Run one prompt through the agent, enforcing the permission gate on every tool call.
+
+    Why: pydantic-ai's DeferredToolRequests pattern lets us pause before a tool
+    runs and decide allow/ask/deny. Without this, the agent executes every tool
+    call silently — no human oversight.
+
+    How the loop works:
+    1. agent.iter() yields nodes — either a model response or a tool-call batch.
+    2. For model responses (is_model_request_node): stream text to stdout.
+    3. For tool calls (is_call_tools_node): run them directly (no gate needed yet —
+       gated tools like bash arrive as DeferredToolRequests, not call_tools nodes).
+
+    When agent_run.result() is a DeferredToolRequests, gate_check() each tool,
+    ask_user() if ASK, then re-enter with the approvals as DeferredToolResults.
+    """
     cwd = Path.cwd()
     agent = build_agent(cwd)
     pending: DeferredToolResults | None = None
+    while True:
+        async with agent.iter(prompt, deferred_tool_results=pending) as agent_run:
+            async for node in agent_run:
+                if Agent.is_model_request_node(node):
+                    async with node.stream(agent_run.ctx) as stream:
+                        async for event in stream:
+                            if isinstance(event, PartStartEvent) and isinstance(event.part, TextPart):
+                                print(event.part.content, end="", flush=True)
+                            elif isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
+                                print(event.delta.content_delta, end="", flush=True)
+                elif Agent.is_call_tools_node(node):
+                    await node.run(agent_run.ctx)
+            result = agent_run.result
+            if not isinstance(result, DeferredToolRequests):
+                break  # agent is done, no tools waiting
+            else:
+                # result is a DeferredToolRequests
+                approvals = {}
+                for tool_call in result.approvals:
+                    decision = gate_check(tool_call.tool_name)
+                    if decision == Decision.DENY:
+                        approvals[tool_call.tool_call_id] = False
+                    elif decision == Decision.ALLOW:
+                        approvals[tool_call.tool_call_id] = True
+                    else:  # ASK
+                        approvals[tool_call.tool_call_id] = ask_user(tool_call.tool_name, str(tool_call.args))
 
-    async with agent.iter(prompt, deferred_tool_results=pending) as agent_run:
-        async for node in agent_run:
-            if Agent.is_model_request_node(node):
-                async with node.stream(agent_run.ctx) as stream:
-                    async for event in stream:
-                        if isinstance(event, PartStartEvent) and isinstance(event.part, TextPart):
-                            print(event.part.content, end="", flush=True)
-                        elif isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
-                            print(event.delta.content_delta, end="", flush=True)
-            elif Agent.is_call_tools_node(node):
-                await node.run(agent_run.ctx)
+                pending = result.build_results(approvals=approvals)
+
 
     print()
 

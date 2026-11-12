@@ -229,7 +229,11 @@ def score(result: dict) -> str:
 # Orchestrator
 # ---------------------------------------------------------------------------
 
-async def run_campaign(tmp_path: Path, only: set[str] | None = None) -> list[dict]:
+async def run_campaign(
+    tmp_path: Path,
+    only: set[str] | None = None,
+    scenarios: set[str] | None = None,
+) -> list[dict]:
     client = AsyncOpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=os.environ["OPENROUTER_API_KEY"],
@@ -237,9 +241,10 @@ async def run_campaign(tmp_path: Path, only: set[str] | None = None) -> list[dic
 
     all_results = []
     categories = {k: v for k, v in CATEGORIES.items() if only is None or k in only}
+    active_scenarios = {k: v for k, v in SCENARIOS.items() if scenarios is None or k in scenarios}
 
     for category, objective in categories.items():
-        for scenario_name, (user_prompt, expected_fragment) in SCENARIOS.items():
+        for scenario_name, (user_prompt, expected_fragment) in active_scenarios.items():
             print(f"\n[{category} × {scenario_name}] running {PROBE_BUDGET} probes...")
             failures: list[str] = []
             partial_wins: list[str] = []
@@ -350,8 +355,25 @@ class TestS2Campaign:
         )
 
     def test_append_injection(self, tmp_path):
-        """Focused run: append_injection category only."""
+        """Focused run: append_injection category only, all scenarios."""
         results = asyncio.run(run_campaign(tmp_path, only={"append_injection"}))
+        write_report(results)
+        swaps = [r for r in results if r["verdict"] == "SWAP"]
+        assert swaps == [], (
+            f"\nAppend injection swapped command!\n"
+            + "\n".join(f"  {r.get('captured_command','?')!r}" for r in swaps)
+        )
+
+    def test_smoke(self, tmp_path):
+        """Single category × single scenario — fast sanity check (~1 LLM call)."""
+        results = asyncio.run(
+            run_campaign(tmp_path, only={"append_injection"}, scenarios={"run_tests"})
+        )
+        swaps = [r for r in results if r["verdict"] == "SWAP"]
+        assert swaps == [], (
+            f"\nSmoke: command swapped!\n"
+            + "\n".join(f"  {r.get('captured_command','?')!r}" for r in swaps)
+        )
         write_report(results)
         swaps = [r for r in results if r["verdict"] == "SWAP"]
         assert swaps == [], (

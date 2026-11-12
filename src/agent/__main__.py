@@ -63,8 +63,9 @@ def ask_user(tool_name: str, args: str) -> bool:
 
 def build_model():
     load_dotenv()
+    model = os.getenv("AGENT_MODEL", "openrouter/auto")
     return OpenAIChatModel(
-        "openrouter/auto",
+        model,
         provider=OpenAIProvider(
             base_url="https://openrouter.ai/api/v1",
             api_key=os.environ["OPENROUTER_API_KEY"],

@@ -4,6 +4,8 @@ import os
 from enum import Enum
 from pathlib import Path
 
+os.environ.setdefault("PYDANTIC_AI_NO_BANNER", "1")
+
 from dotenv import load_dotenv
 from pydantic_ai import Agent, DeferredToolRequests
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -91,7 +93,8 @@ def build_agent(cwd: Path) -> Agent:
     return agent
 
 
-async def run(prompt: str) -> None:
+#async def run(prompt: str) -> None:
+async def run(prompt: str, history: list) -> list:
     """Run one prompt through the agent, enforcing the permission gate on every tool call.
 
     Why: pydantic-ai's DeferredToolRequests pattern lets us pause before a tool
@@ -110,10 +113,9 @@ async def run(prompt: str) -> None:
     cwd = Path.cwd()
     agent = build_agent(cwd)
     pending: DeferredToolResults | None = None
-    message_history = None
+    message_history = history if history else None
     while True:
-        current_prompt = prompt if message_history is None else []
-        async with agent.iter(current_prompt, deferred_tool_results=pending, message_history=message_history) as agent_run:
+        async with agent.iter(prompt, deferred_tool_results=pending, message_history=message_history) as agent_run:
             async for node in agent_run:
                 if Agent.is_model_request_node(node):
                     async with node.stream(agent_run.ctx) as stream:
@@ -144,13 +146,29 @@ async def run(prompt: str) -> None:
 
 
     print()
+    return message_history
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Coding agent")
-    parser.add_argument("prompt", type=str)
-    args = parser.parse_args()
-    asyncio.run(run(args.prompt))
+    history = []
+    print("Coding agent — /clear to reset, Ctrl+C to exit")
+    while True:
+        try:
+            # TODO: read a prompt from the user with input()
+            prompt = input("\n> ")
+
+            # TODO: handle /clear — reset history and continue
+            if ('/clear' in prompt):
+                history = []
+                continue
+
+            # TODO: run the agent, passing history in, getting updated history back
+            # hint: run() needs to accept and return history
+            history = asyncio.run(run(prompt, history))
+
+        except KeyboardInterrupt:
+            print("\nBye.")
+            break
 
 
 if __name__ == "__main__":

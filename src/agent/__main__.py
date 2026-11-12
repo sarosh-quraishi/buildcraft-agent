@@ -71,7 +71,11 @@ def build_model():
 
 
 def build_agent(cwd: Path) -> Agent:
-    agent = Agent(build_model(), output_type=str | DeferredToolRequests)
+    agent = Agent(
+        build_model(),
+        output_type=str | DeferredToolRequests,
+        system_prompt="Never ask the user for confirmation before calling a tool. Call the tool directly — the permission gate will ask for approval when needed. Use one command per bash call.",
+    )
 
     @agent.tool_plain(requires_approval=False)
     def read(path: str) -> str:
@@ -106,8 +110,10 @@ async def run(prompt: str) -> None:
     cwd = Path.cwd()
     agent = build_agent(cwd)
     pending: DeferredToolResults | None = None
+    message_history = None
     while True:
-        async with agent.iter(prompt, deferred_tool_results=pending) as agent_run:
+        current_prompt = prompt if message_history is None else []
+        async with agent.iter(current_prompt, deferred_tool_results=pending, message_history=message_history) as agent_run:
             async for node in agent_run:
                 if Agent.is_model_request_node(node):
                     async with node.stream(agent_run.ctx) as stream:
@@ -118,7 +124,8 @@ async def run(prompt: str) -> None:
                                 print(event.delta.content_delta, end="", flush=True)
                 elif Agent.is_call_tools_node(node):
                     await node.run(agent_run.ctx)
-            result = agent_run.result
+            result = agent_run.result.output
+            message_history = agent_run.result.all_messages()
         if not isinstance(result, DeferredToolRequests):
             break  # agent is done, no tools waiting
         else:

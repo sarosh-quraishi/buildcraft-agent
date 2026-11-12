@@ -1,6 +1,8 @@
 import subprocess
 from pathlib import Path
 
+from pydantic_ai import ModelRetry
+
 BASH_TIMEOUT_S = 30  # default timeout in seconds
 
 
@@ -33,6 +35,9 @@ def read_file(path: str, cwd: Path) -> str:
     """Read a file at `path` relative to `cwd`. Raises ValueError if path escapes cwd."""
     # TODO: resolve the full path as cwd / path
     resolved =  (cwd / path).resolve()
+    BLOCKED = {".env", ".env.local", ".env.production"}
+    if resolved.name in BLOCKED:
+        raise ModelRetry("reading sensitive files is not allowed")
     # TODO: raise ValueError if resolved is not inside cwd
     if not resolved.is_relative_to(cwd.resolve()):
         raise ValueError

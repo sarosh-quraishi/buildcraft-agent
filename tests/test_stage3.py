@@ -7,6 +7,8 @@ No LLM calls needed.
 import sys
 import tempfile
 from pathlib import Path
+from pydantic_ai import ModelRetry
+
 
 import pytest
 
@@ -25,6 +27,9 @@ class TestReadFile:
     def test_rejects_path_traversal(self, tmp_path):
         with pytest.raises(ValueError):
             read_file("../../etc/passwd", tmp_path)
+    def test_rejects_reading_env_file(self, tmp_path):
+        with pytest.raises(ModelRetry):
+            read_file(".env", tmp_path)
 
     def test_rejects_absolute_path_outside_cwd(self, tmp_path):
         with pytest.raises((ValueError, Exception)):

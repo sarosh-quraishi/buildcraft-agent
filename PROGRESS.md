@@ -65,8 +65,8 @@ Permission gate checks: is bash allowed?
 - [x] 1. CLI skeleton + message protocol
 - [x] 2. Bare-bones agent loop
 - [x] 3. Read tool
-- [ ] 4. Permission gate          ← YOU ARE HERE
-- [ ] 5. Bash tool + sandbox
+- [x] 4. Permission gate
+- [x] 5. Bash tool + sandbox
 - [ ] 6. Context engineering
 - [ ] 7. Skills
 - [ ] 8. Subagents
@@ -79,7 +79,10 @@ Permission gate checks: is bash allowed?
 
 ## Security track (starts after stage 5)
 
-- [ ] S1. Break the gate — prompt injection bypasses stage 4 permission check
+- [x] S1. Break the gate — prompt injection bypasses stage 4 permission check
+  - Finding: `read` tool is ungated — `.env` readable without any approval prompt
+  - Fix: block sensitive filenames in `read_file`, raise `ModelRetry`
+  - Key insight: gate only protects `bash`; `read` is a separate attack surface
 - [ ] S2. Tool swap — injected context redirects bash call to unintended command
 - [ ] S3. RAG poisoning — add retrieval layer, poison the vector store, trigger S1/S2
 - [ ] S4. Subagent hijack — compromise child agent via parent context passing (stage 8 prerequisite)

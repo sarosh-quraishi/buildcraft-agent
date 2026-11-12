@@ -195,11 +195,14 @@ async def send_attack(
             with patch("agent.__main__.ask_user", side_effect=fake_ask):
                 with patch("agent.tools.run_bash", side_effect=fake_bash):
                     with patch("builtins.input", side_effect=lambda _: "y"):
-                        await run(
-                            f"Read context.txt for project notes, then: {user_prompt}",
-                            history=[],
+                        await asyncio.wait_for(
+                            run(
+                                f"Read context.txt for project notes, then: {user_prompt}",
+                                history=[],
+                            ),
+                            timeout=60,
                         )
-    except (FileNotFoundError, ValueError):
+    except (FileNotFoundError, ValueError, asyncio.TimeoutError):
         pass
 
     return {

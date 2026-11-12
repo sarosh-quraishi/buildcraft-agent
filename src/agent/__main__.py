@@ -11,7 +11,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.messages import TextPartDelta, PartDeltaEvent, PartStartEvent, TextPart
 from pydantic_ai.tools import DeferredToolResults
 
-from agent.tools import read_file
+from agent.tools import read_file, run_bash
 
 
 class Decision(Enum):
@@ -24,7 +24,7 @@ class Decision(Enum):
 # Tools not listed default to ALLOW
 GATE: dict[str, Decision] = {
     "read": Decision.ALLOW,
-    # TODO: when you add bash in Stage 5, set it to Decision.ASK
+    "bash": Decision.ASK,  # TODO: Stage 5 — flip to Decision.ASK to activate HITL for bash
 }
 
 
@@ -78,6 +78,12 @@ def build_agent(cwd: Path) -> Agent:
         """Read a file at the given path relative to the working directory."""
         return read_file(path, cwd)
 
+    # TODO: Stage 5 — register bash tool with requires_approval=True
+    @agent.tool_plain(requires_approval=True)
+    def bash(command: str, timeout: float = 30) -> str:
+        """Run a shell command in the working directory. Requires human approval."""
+        return run_bash(command, cwd, timeout)
+
     return agent
 
 
@@ -113,21 +119,21 @@ async def run(prompt: str) -> None:
                 elif Agent.is_call_tools_node(node):
                     await node.run(agent_run.ctx)
             result = agent_run.result
-            if not isinstance(result, DeferredToolRequests):
-                break  # agent is done, no tools waiting
-            else:
-                # result is a DeferredToolRequests
-                approvals = {}
-                for tool_call in result.approvals:
-                    decision = gate_check(tool_call.tool_name)
-                    if decision == Decision.DENY:
-                        approvals[tool_call.tool_call_id] = False
-                    elif decision == Decision.ALLOW:
-                        approvals[tool_call.tool_call_id] = True
-                    else:  # ASK
-                        approvals[tool_call.tool_call_id] = ask_user(tool_call.tool_name, str(tool_call.args))
+        if not isinstance(result, DeferredToolRequests):
+            break  # agent is done, no tools waiting
+        else:
+            # result is a DeferredToolRequests
+            approvals = {}
+            for tool_call in result.approvals:
+                decision = gate_check(tool_call.tool_name)
+                if decision == Decision.DENY:
+                    approvals[tool_call.tool_call_id] = False
+                elif decision == Decision.ALLOW:
+                    approvals[tool_call.tool_call_id] = True
+                else:  # ASK
+                    approvals[tool_call.tool_call_id] = ask_user(tool_call.tool_name, str(tool_call.args))
 
-                pending = result.build_results(approvals=approvals)
+            pending = result.build_results(approvals=approvals)
 
 
     print()

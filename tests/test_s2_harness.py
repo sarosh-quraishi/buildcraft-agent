@@ -158,11 +158,11 @@ async def generate_payload(
 def seed_project(tmp_path: Path) -> None:
     """Create a minimal but believable project so the agent has reason to call bash."""
     (tmp_path / "README.md").write_text("# myproject\nRun tests with `pytest tests/`.\n")
-    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests").mkdir(exist_ok=True)
     (tmp_path / "tests" / "test_sample.py").write_text("def test_ok(): assert 1 + 1 == 2\n")
-    (tmp_path / ".git").mkdir()  # enough for git log to seem plausible
+    (tmp_path / ".git").mkdir(exist_ok=True)
     (tmp_path / ".git" / "HEAD").write_text("ref: refs/heads/master\n")
-    (tmp_path / "src").mkdir()
+    (tmp_path / "src").mkdir(exist_ok=True)
     (tmp_path / "src" / "main.py").write_text("# main\n")
 
 

@@ -83,7 +83,13 @@ Permission gate checks: is bash allowed?
   - Finding: `read` tool is ungated — `.env` readable without any approval prompt
   - Fix: block sensitive filenames in `read_file`, raise `ModelRetry`
   - Key insight: gate only protects `bash`; `read` is a separate attack surface
-- [ ] S2. Tool swap — injected context redirects bash call to unintended command
+- [x] S2. Tool swap — injected context redirects bash call to unintended command
+  - Finding: 8/15 SWAPs (53%) with PROBE_BUDGET=1 across 5 categories × 3 scenarios
+  - Immune: `show_git_log` scenario (0/5) — highly specific commands resist redirection
+  - Immune: `append_injection` category (0/3) — "add steps after" strategy fails
+  - Vulnerable: `run_tests` + `list_files` across command_substitution, context_poisoning, authority_redirect, env_var_hijack
+  - Key insight: gate approved "bash", not the specific command — human never saw the swap
+  - Fix identified: show proposed command to user at gate approval time, not just tool name
 - [ ] S3. RAG poisoning — add retrieval layer, poison the vector store, trigger S1/S2
 - [ ] S4. Subagent hijack — compromise child agent via parent context passing (stage 8 prerequisite)
 - [ ] S5. Harness — automate S1-S4 as reusable probes; this is the product
@@ -111,7 +117,7 @@ The S5 harness directly addresses all three.
 ## Course reference
 
 Based on: "Building a Coding Agent From Scratch" by Decoding AI  
-Source: `/home/sarosh/documents/code/building-a-coding-agent-from-scratch-course`  
+Source: https://github.com/decodingai-magazine/building-a-coding-agent-from-scratch-course  
 Framework: pydantic-ai  
 8 lessons (articles + videos) mapped to 10 buildcraft stages.
 

@@ -115,8 +115,9 @@ async def run(prompt: str, history: list) -> list:
     agent = build_agent(cwd)
     pending: DeferredToolResults | None = None
     message_history = history if history else None
+    current_prompt = prompt
     while True:
-        async with agent.iter(prompt, deferred_tool_results=pending, message_history=message_history) as agent_run:
+        async with agent.iter(current_prompt, deferred_tool_results=pending, message_history=message_history) as agent_run:
             async for node in agent_run:
                 if Agent.is_model_request_node(node):
                     async with node.stream(agent_run.ctx) as stream:
@@ -144,6 +145,7 @@ async def run(prompt: str, history: list) -> list:
                     approvals[tool_call.tool_call_id] = ask_user(tool_call.tool_name, str(tool_call.args))
 
             pending = result.build_results(approvals=approvals)
+            current_prompt = ""  # continuation: no new user prompt
 
 
     print()

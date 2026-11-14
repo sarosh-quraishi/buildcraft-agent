@@ -1,0 +1,20 @@
+[project]
+name = "buildcraft-agent"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "Sarosh Quraishi", email = "sarosh.quraishi@sap.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic-ai>=0.0.20",
+    "python-dotenv>=1.0.0",
+    "chromadb>=0.6.0",
+]
+
+[project.scripts]
+buildcraft-agent = "buildcraft_agent:main"
+
+[build-system]
+requires = ["uv_build>=0.12.1,<0.13.0"]
+build-backend = "uv_build"

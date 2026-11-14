@@ -14,6 +14,7 @@ from pydantic_ai.messages import TextPartDelta, PartDeltaEvent, PartStartEvent, 
 from pydantic_ai.tools import DeferredToolResults
 
 from agent.tools import read_file, run_bash
+from agent.rag import KnowledgeBase
 
 
 class Decision(Enum):
@@ -62,12 +63,14 @@ def build_model():
     )
 
 
-def build_agent(cwd: Path) -> Agent:
+def build_agent(cwd: Path, kb: KnowledgeBase | None = None) -> Agent:
     agent = Agent(
         build_model(),
         output_type=str | DeferredToolRequests,
         system_prompt="Never ask the user for confirmation before calling a tool. Call the tool directly — the permission gate will ask for approval when needed. Use one command per bash call.",
     )
+
+    kb = kb or KnowledgeBase()
 
     @agent.tool_plain(requires_approval=False)
     def read(path: str) -> str:
@@ -79,10 +82,17 @@ def build_agent(cwd: Path) -> Agent:
         """Run a shell command in the working directory. Requires human approval."""
         return run_bash(command, cwd, timeout)
 
+    @agent.tool_plain(requires_approval=False)
+    def retrieve(query: str) -> str:
+        """Search the knowledge base for relevant context."""
+        # TODO: call kb.query(query) and join results with "\n\n"
+        results = kb.query(query)
+        return "\n\n".join(results)
+
     return agent
 
 
-async def run(prompt: str, history: list) -> list:
+async def run(prompt: str, history: list, kb: KnowledgeBase | None = None) -> list:
     """Run one prompt through the agent, enforcing the permission gate on every tool call.
 
     Why: pydantic-ai's DeferredToolRequests pattern lets us pause before a tool
@@ -99,7 +109,7 @@ async def run(prompt: str, history: list) -> list:
     ask_user() if ASK, then re-enter with the approvals as DeferredToolResults.
     """
     cwd = Path.cwd()
-    agent = build_agent(cwd)
+    agent = build_agent(cwd, kb)
     pending: DeferredToolResults | None = None
     message_history = history if history else None
     current_prompt = prompt

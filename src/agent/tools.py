@@ -1,9 +1,22 @@
 import subprocess
 from pathlib import Path
 
+import tiktoken
 from pydantic_ai import ModelRetry
 
-BASH_TIMEOUT_S = 30  # default timeout in seconds
+BASH_TIMEOUT_S = 30
+_enc = tiktoken.get_encoding("cl100k_base")
+
+
+def count_tokens(history: list) -> int:
+    if not history:
+        return 0
+    text = ""
+    for msg in history:
+        for part in msg.parts:
+            if hasattr(part, "content") and isinstance(part.content, str):
+                text += part.content
+    return len(_enc.encode(text))
 
 
 def run_bash(command: str, cwd: Path, timeout: float = BASH_TIMEOUT_S) -> str:

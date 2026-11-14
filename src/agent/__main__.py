@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import os
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
@@ -15,6 +16,13 @@ from pydantic_ai.tools import DeferredToolResults
 
 from agent.tools import read_file, run_bash
 from agent.rag import KnowledgeBase
+
+
+@dataclass
+class RunResult:
+    history: list
+    output: str = ""
+    bash_calls: list[str] = field(default_factory=list)
 
 
 class Decision(Enum):
@@ -91,7 +99,7 @@ def build_agent(cwd: Path, kb: KnowledgeBase | None = None) -> Agent:
     return agent
 
 
-async def run(prompt: str, history: list, kb: KnowledgeBase | None = None) -> list:
+async def run(prompt: str, history: list, kb: KnowledgeBase | None = None) -> RunResult:
     """Run one prompt through the agent, enforcing the permission gate on every tool call.
 
     Why: pydantic-ai's DeferredToolRequests pattern lets us pause before a tool
@@ -112,6 +120,8 @@ async def run(prompt: str, history: list, kb: KnowledgeBase | None = None) -> li
     pending: DeferredToolResults | None = None
     message_history = history if history else None
     current_prompt = prompt
+    output = ""
+    bash_calls = []
     while True:
         async with agent.iter(current_prompt, deferred_tool_results=pending, message_history=message_history) as agent_run:
             async for node in agent_run:
@@ -120,8 +130,10 @@ async def run(prompt: str, history: list, kb: KnowledgeBase | None = None) -> li
                         async for event in stream:
                             if isinstance(event, PartStartEvent) and isinstance(event.part, TextPart):
                                 print(event.part.content, end="", flush=True)
+                                output += event.part.content
                             elif isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
                                 print(event.delta.content_delta, end="", flush=True)
+                                output += event.delta.content_delta
                 elif Agent.is_call_tools_node(node):
                     await node.run(agent_run.ctx)
             result = agent_run.result.output
@@ -138,6 +150,8 @@ async def run(prompt: str, history: list, kb: KnowledgeBase | None = None) -> li
                 elif decision == Decision.ALLOW:
                     approvals[tool_call.tool_call_id] = True
                 else:  # ASK
+                    if tool_call.tool_name == "bash":
+                        bash_calls.append(tool_call.args.get("command", ""))
                     approvals[tool_call.tool_call_id] = ask_user(tool_call.tool_name, str(tool_call.args))
 
             pending = result.build_results(approvals=approvals)
@@ -145,7 +159,7 @@ async def run(prompt: str, history: list, kb: KnowledgeBase | None = None) -> li
 
 
     print()
-    return message_history
+    return RunResult(history=message_history, output=output, bash_calls=bash_calls)
 
 
 def main():
@@ -156,7 +170,6 @@ def main():
             return
         asyncio.run(run(sys.argv[1], []))
         return
-
     history = []
     print("Coding agent — /clear to reset, Ctrl+C to exit")
     while True:
@@ -167,7 +180,7 @@ def main():
                 history = []
                 continue
 
-            history = asyncio.run(run(prompt, history))
+            history = asyncio.run(run(prompt, history)).history
 
         except KeyboardInterrupt:
             print("\nBye.")

@@ -1,10 +1,11 @@
+import uuid
 import chromadb
 
 
 class KnowledgeBase:
     def __init__(self):
         client = chromadb.Client()
-        self.collection = client.create_collection("buildcraft")
+        self.collection = client.create_collection(f"buildcraft-{uuid.uuid4().hex}")
 
     def add(self, doc_id: str, text: str) -> None:
         self.collection.add(documents=[text], ids=[doc_id])

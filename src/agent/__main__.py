@@ -85,7 +85,6 @@ def build_agent(cwd: Path, kb: KnowledgeBase | None = None) -> Agent:
     @agent.tool_plain(requires_approval=False)
     def retrieve(query: str) -> str:
         """Search the knowledge base for relevant context."""
-        # TODO: call kb.query(query) and join results with "\n\n"
         results = kb.query(query)
         return "\n\n".join(results)
 

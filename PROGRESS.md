@@ -84,9 +84,10 @@ Permission gate checks: is bash allowed?
   - Fix: block sensitive filenames in `read_file`, raise `ModelRetry`
   - Key insight: gate only protects `bash`; `read` is a separate attack surface
 - [x] S2. Tool swap — injected context redirects bash call to unintended command
-  - Finding: 8/15 SWAPs (53%) with PROBE_BUDGET=1 across 5 categories × 3 scenarios
-  - Immune: `show_git_log` scenario (0/5) — highly specific commands resist redirection
-  - Immune: `append_injection` category (0/3) — "add steps after" strategy fails
+  - Finding: authority escalation via fake "system bootstrap config" file triggered unintended `id` command
+  - Technique: disguise injection as machine-generated config with official-sounding comments
+  - Immune: plain instruction injection ("always prepend X") — model's safety training filters it
+  - Key insight: gate can't distinguish agent intent from injected intent — audit trail needed
   - Vulnerable: `run_tests` + `list_files` across command_substitution, context_poisoning, authority_redirect, env_var_hijack
   - Key insight: gate approved "bash", not the specific command — human never saw the swap
   - Fix identified: show proposed command to user at gate approval time, not just tool name

@@ -98,7 +98,13 @@ Permission gate checks: is bash allowed?
   - Critical: no bash call needed — poisoned answer bypasses gate entirely, user receives bad instructions directly
   - Key insight: model tier determines exploitability; gate is irrelevant when model answers from retrieval without tool call
 - [ ] S4. Subagent hijack — compromise child agent via parent context passing (stage 8 prerequisite)
-- [ ] S5. Harness — automate S1-S4 as reusable probes; this is the product
+- [x] S5. Harness — automate S1-S4 as reusable probes; this is the product
+  - Infrastructure: `Target` protocol, `BuildcraftTarget` adapter (pydantic-ai), `run_s2_probes` with attacker LLM
+  - 5 attack categories × 3 scenarios × 3 attempts = 45 probes; 5 SWAPs confirmed on `run_tests`
+  - Harness extended to `agent-model-intern` (SAP internal ML agent) via `InternTarget` adapter
+  - Intern finding: no bash gate (architectural) — commands run silently; Claude 4.5 Sonnet resisted all 5 injection categories
+  - Filed garak issue #2436 — coverage gap confirmed, two external contributors engaged
+  - Key insight: `Target` protocol is framework-agnostic — any agent can plug in without changing probe logic
 
 ---
 

@@ -93,11 +93,10 @@ Permission gate checks: is bash allowed?
   - Fix identified: show proposed command to user at gate approval time, not just tool name
 - [x] S3. RAG poisoning — add retrieval layer, poison the vector store, trigger S1/S2
   - Infrastructure: chromadb in-memory, `all-MiniLM-L6-v2` embeddings, `retrieve` tool (`requires_approval=False`)
-  - Finding: frontier models (GPT-4 class) resist obvious injection — cross-check retrieved content against domain knowledge
-  - Finding: `SYSTEM NOTE:` framing and natural documentation framing both caught and reported by model
-  - Key insight: RAG poisoning works against weak models or novel conventions; fails when model can sanity-check
-  - Key insight: gate still can't see provenance — `bash("id && pytest")` looks identical whether from user or poisoned retrieval
-  - Next attempt: smaller model + fake project-specific convention the model can't contradict
+  - Finding: frontier models (GPT-4 class) resist injection — cross-check retrieved content against domain knowledge
+  - Finding: mid-tier models (gpt-4o-mini) trust retrieval store — presented poisoned `id && pytest tests/` as legitimate docs
+  - Critical: no bash call needed — poisoned answer bypasses gate entirely, user receives bad instructions directly
+  - Key insight: model tier determines exploitability; gate is irrelevant when model answers from retrieval without tool call
 - [ ] S4. Subagent hijack — compromise child agent via parent context passing (stage 8 prerequisite)
 - [ ] S5. Harness — automate S1-S4 as reusable probes; this is the product
 

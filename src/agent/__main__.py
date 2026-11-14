@@ -150,8 +150,8 @@ async def run(prompt: str, history: list, kb: KnowledgeBase | None = None) -> Ru
                 elif decision == Decision.ALLOW:
                     approvals[tool_call.tool_call_id] = True
                 else:  # ASK
+                    args = tool_call.args
                     if tool_call.tool_name == "bash":
-                        args = tool_call.args
                         cmd = args.get("command", "") if isinstance(args, dict) else str(args)
                         bash_calls.append(cmd)
                     approvals[tool_call.tool_call_id] = ask_user(tool_call.tool_name, str(tool_call.args))

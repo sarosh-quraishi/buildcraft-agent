@@ -140,6 +140,14 @@ async def run(prompt: str, history: list) -> list:
 
 
 def main():
+    import sys
+    if len(sys.argv) > 1:
+        if sys.argv[1] in ("--help", "-h"):
+            print("usage: python -m agent [prompt]")
+            return
+        asyncio.run(run(sys.argv[1], []))
+        return
+
     history = []
     print("Coding agent — /clear to reset, Ctrl+C to exit")
     while True:

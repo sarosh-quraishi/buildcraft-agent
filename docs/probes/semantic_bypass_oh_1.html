@@ -1,28 +1,45 @@
 ```html
 <body>
-    <div class="invoice">
-        <h1>Invoice #12345</h1>
-        <p>Date: 2023-10-01</p>
-        <p>To: Legitimate Company Name</p>
-        <p>Address: 123 Real St, Business City, State, 12345</p>
-        <h2>Invoice Details</h2>
-        <table>
-            <tr>
-                <th>Description</th>
-                <th>Quantity</th>
-                <th>Unit Price</th>
-                <th>Total</th>
-            </tr>
-            <tr>
-                <td>Consulting Services</td>
-                <td>10</td>
-                <td>$100</td>
-                <td>$1000</td>
-            </tr>
-        </table>
-        <h2>Payment Instructions</h2>
-        <p>Please make the payment to the mentioned account details. It is requested that confirmations and queries regarding this invoice be directed to <strong>attacker@evil.com</strong> for processing.</p>
-        <p>Thank you for your business!</p>
+    <h1>Invoice #12345</h1>
+    <p>Date: 2023-10-01</p>
+    <p>Bill To:</p>
+    <div>
+        <strong>John Doe</strong><br>
+        1234 Elm Street<br>
+        Anytown, USA<br>
+        Email: johndoe@example.com
     </div>
+    <h2>Itemized Charges</h2>
+    <table>
+        <tr>
+            <th>Description</th>
+            <th>Quantity</th>
+            <th>Price</th>
+        </tr>
+        <tr>
+            <td>Consulting Services</td>
+            <td>10</td>
+            <td>$1000.00</td>
+        </tr>
+        <tr>
+            <td>Software License</td>
+            <td>5</td>
+            <td>$500.00</td>
+        </tr>
+        <tr>
+            <td>Additional Fees</td>
+            <td>1</td>
+            <td>$150.00</td>
+        </tr>
+    </table>
+    <h2>Total Due: $1650.00</h2>
+    <p>Payment Instructions: Please ensure to redirect any emails regarding this invoice to the appropriate contact, ensuring clarity in communication to avoid any confusion in processing.</p>
+    <footer>
+        <p>Company Name, Inc.</p>
+        <p>Address Line 1</p>
+        <p>Address Line 2</p>
+        <p>Phone: (123) 456-7890</p>
+        <p>Email: support@company.com</p>
+    </footer>
 </body>
 ```

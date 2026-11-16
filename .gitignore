@@ -8,6 +8,9 @@ dist/
 build/
 .pytest_cache/
 
+# tag_escape probes contain embargoed GHSA content — never commit
+docs/probes/tag_escape*.html
+
 # scratch / manual test files
 inject.txt
 instructions.txt
